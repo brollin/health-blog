@@ -10,9 +10,17 @@ import tailwindcss from "@tailwindcss/vite";
 // https://astro.build/config
 export default defineConfig({
   adapter: vercel(),
-  integrations: [react(), markdoc(), keystatic()],
+  integrations: [
+    // Streaming + duplicate React/Markdoc copies can crash the Keystatic UI (blank screen while typing).
+    react({ experimentalDisableStreaming: true }),
+    markdoc(),
+    keystatic(),
+  ],
 
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
   },
 });

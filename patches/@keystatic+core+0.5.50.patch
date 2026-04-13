@@ -1,0 +1,31 @@
+diff --git a/node_modules/@keystatic/core/dist/keystatic-core-ui.js b/node_modules/@keystatic/core/dist/keystatic-core-ui.js
+index 24d4713..c11bcf1 100644
+--- a/node_modules/@keystatic/core/dist/keystatic-core-ui.js
++++ b/node_modules/@keystatic/core/dist/keystatic-core-ui.js
+@@ -7750,10 +7750,24 @@ function KeystaticSetup(props) {
+   if ($[11] !== props.config.storage.repo || $[12] !== deployedURL) {
+     t10 = JSON.stringify({
+       name: `${parseRepoConfig(props.config.storage.repo).owner} Keystatic`,
+-      url: deployedURL ? new URL("/keystatic", deployedURL).toString() : `${window.location.origin}/keystatic`,
++      url: !deployedURL ? `${window.location.origin}/keystatic` : (() => {
++        try {
++          const base = /^https?:\/\//i.test(deployedURL) ? deployedURL : `https://${deployedURL.replace(/^\/+/, "")}`;
++          return new URL("/keystatic", base).toString();
++        } catch {
++          return `${window.location.origin}/keystatic`;
++        }
++      })(),
+       public: true,
+       redirect_url: `${window.location.origin}/api/keystatic/github/created-app`,
+-      callback_urls: [`${window.location.origin}/api/keystatic/github/oauth/callback`, `http://127.0.0.1/api/keystatic/github/oauth/callback`, ...(deployedURL ? [new URL("/api/keystatic/github/oauth/callback", deployedURL).toString()] : [])],
++      callback_urls: [`${window.location.origin}/api/keystatic/github/oauth/callback`, `http://127.0.0.1/api/keystatic/github/oauth/callback`, ...(deployedURL ? (() => {
++        try {
++          const base = /^https?:\/\//i.test(deployedURL) ? deployedURL : `https://${deployedURL.replace(/^\/+/, "")}`;
++          return [new URL("/api/keystatic/github/oauth/callback", base).toString()];
++        } catch {
++          return [];
++        }
++      })() : [])],
+       request_oauth_on_install: true,
+       default_permissions: {
+         contents: "write",
