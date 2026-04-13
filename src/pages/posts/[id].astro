@@ -1,0 +1,30 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getCollection, getEntry, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts");
+  return posts.map((post) => ({
+    params: { id: post.id },
+  }));
+}
+
+const { id } = Astro.params;
+if (id === undefined) {
+  return new Response(null, { status: 404 });
+}
+
+const post = await getEntry("posts", id);
+if (post === undefined) {
+  return new Response(null, { status: 404 });
+}
+
+const { Content } = await render(post);
+---
+
+<Layout>
+  <article>
+    <h1>{post.data.title}</h1>
+    <Content />
+  </article>
+</Layout>
