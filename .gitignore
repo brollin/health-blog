@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# Vercel CLI (local link / project metadata)
+.vercel/
+
 # generated types
 .astro/
 
