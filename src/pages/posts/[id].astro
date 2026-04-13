@@ -2,6 +2,8 @@
 import Layout from "../../layouts/Layout.astro";
 import { getCollection, getEntry, render } from "astro:content";
 
+export const prerender = true;
+
 export async function getStaticPaths() {
   const posts = await getCollection("posts");
   return posts.map((post) => ({
@@ -22,9 +24,13 @@ if (post === undefined) {
 const { Content } = await render(post);
 ---
 
-<Layout>
-  <article>
-    <h1>{post.data.title}</h1>
-    <Content />
+<Layout title={post.data.title}>
+  <article class="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
+    <h1 class="text-3xl font-semibold tracking-tight text-stone-900">
+      {post.data.title}
+    </h1>
+    <div class="mt-8 text-stone-700 leading-relaxed">
+      <Content />
+    </div>
   </article>
 </Layout>
