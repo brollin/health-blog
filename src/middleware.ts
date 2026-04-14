@@ -1,39 +1,63 @@
+/// <reference types="node" />
+import { env } from "node:process";
 import { defineMiddleware } from "astro:middleware";
 
 /**
- * Vercel (and similar proxies) forward the real public URL via headers, but the
- * incoming Request URL can still look like localhost. Keystatic builds GitHub
- * OAuth `redirect_uri` from `request.url`, so we rewrite it to the public origin.
+ * Keystatic builds GitHub OAuth `redirect_uri` from `request.url` (`githubLogin` in
+ * @keystatic/core). On Vercel, that URL can still look like localhost/internal host
+ * even when the browser hit your real domain.
+ *
+ * Fix: rewrite the request to your public origin. Prefer PUBLIC_SITE_URL (set in
+ * Vercel + .env) so we do not rely on x-forwarded-* being present on every invocation.
  *
  * @see https://github.com/Thinkmill/keystatic/issues/1022
  */
 export const onRequest = defineMiddleware((context, next) => {
-  // Proxied public URL only matters in production; skip locally to avoid odd header combos.
   if (import.meta.env.DEV) {
     return next();
   }
 
   const { request, url } = context;
-  const forwardedProto = request.headers.get("x-forwarded-proto");
-  const forwardedHost = request.headers.get("x-forwarded-host");
 
-  if (
-    !url.pathname.startsWith("/api/keystatic") ||
-    !forwardedProto ||
-    !forwardedHost
-  ) {
+  if (!url.pathname.startsWith("/api/keystatic")) {
     return next();
   }
 
-  const publicOrigin = `${forwardedProto}://${forwardedHost}`;
-  let publicUrl: URL;
+  let publicOrigin: string | null = null;
+  const site = import.meta.env.PUBLIC_SITE_URL ?? env.PUBLIC_SITE_URL;
+  if (typeof site === "string" && site.trim() !== "") {
+    try {
+      publicOrigin = new URL(site.trim()).origin;
+    } catch {
+      publicOrigin = null;
+    }
+  }
+
+  if (!publicOrigin) {
+    const proto = request.headers.get("x-forwarded-proto") ?? "https";
+    const host =
+      request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    if (!host) {
+      return next();
+    }
+    publicOrigin = `${proto}://${host}`;
+  }
+
+  let requestOrigin: string;
   try {
-    publicUrl = new URL(url.pathname + url.search, `${publicOrigin}/`);
+    requestOrigin = new URL(request.url).origin;
   } catch {
     return next();
   }
 
-  if (url.origin === publicUrl.origin) {
+  if (requestOrigin === publicOrigin) {
+    return next();
+  }
+
+  let publicUrl: URL;
+  try {
+    publicUrl = new URL(url.pathname + url.search, `${publicOrigin}/`);
+  } catch {
     return next();
   }
 
