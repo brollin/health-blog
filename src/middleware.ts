@@ -1,5 +1,3 @@
-/// <reference types="node" />
-import { env } from "node:process";
 import { defineMiddleware } from "astro:middleware";
 
 /**
@@ -24,7 +22,7 @@ export const onRequest = defineMiddleware((context, next) => {
   }
 
   let publicOrigin: string | null = null;
-  const site = import.meta.env.PUBLIC_SITE_URL ?? env.PUBLIC_SITE_URL;
+  const site = import.meta.env.PUBLIC_SITE_URL;
   if (typeof site === "string" && site.trim() !== "") {
     try {
       publicOrigin = new URL(site.trim()).origin;
